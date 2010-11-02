@@ -48,15 +48,34 @@ puts "End sparql query"
 
 system "join -t \"\t\" ps_phone_numbers.csv vivo_phone_numbers.csv > joined_phone_numbers.csv"
 
+add_statements = []
+remove_statements = []
+work_phone_pred = RDF::URI.new('http://vivoweb.org/ontology/core#workPhone')
+work_fax_pred = RDF::URI.new('http://vivoweb.org/ontology/core#workFax')
 File.open('joined_phone_numbers.csv').each do |line|
   (ufid, type, ps_value, uri, vivo_work_phone, vivo_work_fax) = line.chomp!.split("\t")
+  uri = RDF::URI.new(uri)
   if type == '10'
     if vivo_work_phone != ps_value
-      puts "Work Phone Mismatch! URI: #{uri} Ufid: #{ufid} Old: '#{vivo_work_phone}'\t New: '#{ps_value}'"
+      add_statements << RDF::Statement.new(uri, work_phone_pred, RDF::Literal.new(ps_value))
+      remove_statements << RDF::Statement(uri, work_phone_pred, RDF::Literal.new(vivo_work_phone))
     end
   elsif type == '11'
     if vivo_work_fax != ps_value
-      puts "Work Fax Mismatch! URI: #{uri} Ufid: #{ufid} Old: '#{vivo_work_fax}'\t New: '#{ps_value}'"
+      add_statements << RDF::Statement.new(uri, work_fax_pred, RDF::Literal.new(ps_value))
+      remove_statements << RDF::Statement(uri, work_fax_pred, RDF::Literal.new(vivo_work_fax))
     end
+  end
+end
+
+RDF::Writer.open('add_phone_numbers.nt') do |writer|
+  add_statements.each do |add_statement|
+    writer << add_statement
+  end
+end
+
+RDF::Writer.open('remove_phone_numbers.nt') do |writer|
+  remove_statements.each do |remove_statement|
+    writer << remove_statement
   end
 end

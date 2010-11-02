@@ -45,19 +45,43 @@ File.open('vivo_name_data.csv', 'w') { |f| f.write(data) }
 puts "End sparql query"
 system "join -t \"\t\" ps_faculty_names.csv vivo_name_data.csv > joined_name_data.csv"
 
+add_statements = []
+remove_statements = []
+
+first_name_pred = RDF::URI.new('http://xmlns.com/foaf/0.1/firstName')
+last_name_pred = RDF::URI.new('http://xmlns.com/foaf/0.1/lastName')
+label_pred = RDF::URI.new('http://www.w3.org/2000/01/rdf-schema#label')
+
 File.open('joined_name_data.csv').each do |line|
   (ufid, type, ps_value, uri, vivo_first_name, vivo_last_name, vivo_label) = line.chomp!.split("\t")
+  uri = RDF::URI.new(uri)
   if type == '35'
     if vivo_first_name != ps_value
-      puts "First Name Mismatch! URI: #{uri} Ufid: #{ufid} First Name Mismatch!  Old: '#{vivo_first_name}'\t New: '#{ps_value}'"
+      add_statements << RDF::Statement.new(uri, first_name_pred, RDF::Literal.new(ps_value))
+      remove_statements << RDF::Statement(uri, first_name_pred, RDF::Literal.new(vivo_first_name))
     end
   elsif type == '36'
     if vivo_last_name != ps_value
-      puts "Last Name Mismatch! URI: #{uri} Ufid: #{ufid} Old: '#{vivo_last_name}'\t New: '#{ps_value}'"
+      add_statements << RDF::Statement.new(uri, last_name_pred, RDF::Literal.new(ps_value))
+      remove_statements << RDF::Statement(uri, last_name_pred, RDF::Literal.new(vivo_last_name))
     end
   elsif type == '232'
     if vivo_label != ps_value
-      puts "Display Name Mismatch! URI: #{uri} Ufid: #{ufid} Old: '#{vivo_label}'\t New: '#{ps_value}'"
+      add_statements << RDF::Statement.new(uri, label_pred, RDF::Literal.new(ps_value))
+      remove_statements << RDF::Statement(uri, label_pred, RDF::Literal.new(vivo_label))
     end
+  end
+end
+
+
+RDF::Writer.open('add_names.nt') do |writer|
+  add_statements.each do |add_statement|
+    writer << add_statement
+  end
+end
+
+RDF::Writer.open('remove_names.nt') do |writer|
+  remove_statements.each do |remove_statement|
+    writer << remove_statement
   end
 end
