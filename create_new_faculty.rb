@@ -13,7 +13,7 @@ def create_blank_nodes(dbh)
 select distinct ps.ufid from psIngestDev.ps_names ps
 where
 not exists (
-  select vivo.ufid from psIngestDev.vivo_names vivo where ps.ufid = vivo.ufid
+  select vivo.ufid from psIngestDev.vivo_ufids vivo where ps.ufid = vivo.ufid
 )
   EOH
 
@@ -110,12 +110,64 @@ select uri, ufid from vivo_blank_node_people
   return data
 end
 
+def generate_pos_rdf(dbh)
+  sql = <<-EOH
+select blank.uri as person_uri, vivo_orgs.uri as org_uri, ps.dept_id, ps.ufid, ps.job_title, ps.start_year
+from psIngestDev.ps_positions ps, psIngestDev.vivo_orgs vivo_orgs, vivo_blank_node_people blank
+where ps.dept_id = vivo_orgs.dept_id and ps.ufid = blank.ufid
+  EOH
+  
+  type_pred = RDF::URI.new('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+  person_in_position_pred = RDF::URI.new('http://vivoweb.org/ontology/core#personInPosition') 
+  position_type_pred = RDF::URI.new('http://vivoweb.org/ontology/core#Position')
+  faculty_position_type_pred = RDF::URI.new('http://vivoweb.org/ontology/core#FacultyPosition')
+  dependent_resource_type_pred = RDF::URI.new('http://vivoweb.org/ontology/core#DependentResource')
+
+  position_label_pred = RDF::URI.new('http://www.w3.org/2000/01/rdf-schema#label')
+  position_for_person_pred = RDF::URI.new('http://vivoweb.org/ontology/core#positionForPerson')
+  position_in_organization_pred = RDF::URI.new('http://vivoweb.org/ontology/core#positionInOrganization')
+  organization_for_position_pred = RDF::URI.new('http://vivoweb.org/ontology/core#organizationForPosition')
+  dept_id_of_position_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/deptIDofPosition')
+  start_year_pred = RDF::URI.new('http://vivoweb.org/ontology/core#startYear')
+
+  sth = dbh.execute(sql)
+  data = []
+  sth.fetch do |row|
+    # This is hack to make a bnode with a specific id
+    person_uri = RDF::Node.new
+    person_uri.id = RDF::URI.new(row[:person_uri])
+    pos_uri = RDF::Node.new
+    org_uri = RDF::URI.new(row[:org_uri])
+
+    # connect person to position
+    data << RDF::Statement.new(person_uri, person_in_position_pred, pos_uri)
+
+    # set position properties
+    data << RDF::Statement.new(pos_uri, type_pred, position_type_pred)
+    data << RDF::Statement.new(pos_uri, type_pred, faculty_position_type_pred)
+    data << RDF::Statement.new(pos_uri, type_pred, dependent_resource_type_pred)
+    data << RDF::Statement.new(pos_uri, position_label_pred, row[:job_title])
+    data << RDF::Statement.new(pos_uri, dept_id_of_position_pred, row[:dept_id])
+    data << RDF::Statement.new(pos_uri, start_year_pred, row[:start_year])
+
+    # connect pos -> person and pos -> org
+    data << RDF::Statement.new(pos_uri, position_for_person_pred, person_uri)
+    data << RDF::Statement.new(pos_uri, position_in_organization_pred, org_uri)
+
+    # connect org -> pos
+    data << RDF::Statement.new(org_uri, organization_for_position_pred, pos_uri)
+  end
+  return data
+end
+
 begin
   dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
   create_blank_nodes(dbh)
   name_rdf = generate_name_rdf(dbh)
   ufid_rdf = generate_ufid_rdf(dbh)
   type_rdf = generate_type_rdf(dbh)
+
+  pos_rdf = generate_pos_rdf(dbh)
 
   RDF::Writer.open('new_faculty_names.nt') do |writer|
     name_rdf.each do |datum|
@@ -131,6 +183,11 @@ begin
 
   RDF::Writer.open('new_faculty_types.nt') do |writer|
     type_rdf.each do |datum|
+      writer << datum
+    end
+  end
+  RDF::Writer.open('new_faculty_pos.nt') do |writer|
+    pos_rdf.each do |datum|
       writer << datum
     end
   end
