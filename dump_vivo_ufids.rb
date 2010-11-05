@@ -5,7 +5,7 @@ require 'dbi'
 require 'vivo_web_api'
 require '~/.passwords'
 
-def find_names()
+def find_ufids()
   sparql = <<-EOH
 PREFIX ufVivo: <http://vivo.ufl.edu/ontology/vivo-ufl/>
 
@@ -31,7 +31,7 @@ def cache_vivo_results_in_db(results)
   begin
     dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
 
-    clear_table_sql = "delete from vivo_names"
+    clear_table_sql = "delete from vivo_ufids"
     dbh.do(clear_table_sql)
 
     insert_sql = "insert into vivo_ufids (uri, ufid) values (?, ?)"
@@ -49,3 +49,6 @@ def cache_vivo_results_in_db(results)
     dbh.disconnect if dbh
   end
 end
+
+ufid = find_ufids
+cache_vivo_results_in_db(ufid)
