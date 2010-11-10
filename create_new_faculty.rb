@@ -6,6 +6,11 @@ require 'rdf/raptor'
 require 'rdf/ntriples'
 require '~/.passwords.rb'
 
+# As a prereq for running this script, run the following:
+# dump_faculty_names.rb
+# dump_vivo_ufids.rb
+# dump_vivo_orgs.rb
+# dump_positions.rb
 
 def create_blank_nodes(dbh)
   # Find all ufids not in our vivo
@@ -51,6 +56,7 @@ where ps.ufid = vivo.ufid
 
   first_name_pred = RDF::URI.new('http://xmlns.com/foaf/0.1/firstName')
   last_name_pred = RDF::URI.new('http://xmlns.com/foaf/0.1/lastName')
+  middle_name_pred = RDF::URI.new('http://vivoweb.org/ontology/core#middleName') 
   label_pred = RDF::URI.new('http://www.w3.org/2000/01/rdf-schema#label')
   sth = dbh.execute(join_names_to_blank_nodes)
   data = []
@@ -62,6 +68,8 @@ where ps.ufid = vivo.ufid
       data << RDF::Statement(uri, first_name_pred, row[:name_text])
     elsif row[:type_cd] == 36
       data << RDF::Statement(uri, last_name_pred, row[:name_text])
+    elsif row[:type_cd] == 37 && row[:type_cd] != ""
+      data << RDF::Statement(uri, middle_name_pred, row[:name_text])
     elsif row[:type_cd] == 232
       data << RDF::Statement(uri, label_pred, row[:name_text])
     end
