@@ -77,6 +77,53 @@ where ps.ufid = vivo.ufid
   return data
 end
 
+def generate_phone_number_rdf(dbh)
+  sql = <<-EOH
+select vivo.uri, ps.ufid, ps.type_cd, ps.phone_number 
+from psIngestDev.ps_phone_numbers ps, vivo_blank_node_people vivo
+where ps.ufid = vivo.ufid
+  EOH
+
+  work_phone_pred = RDF::URI.new('http://vivoweb.org/ontology/core#workPhone')
+  work_fax_pred = RDF::URI.new('http://vivoweb.org/ontology/core#workFax')
+
+  sth = dbh.execute(sql)
+  data = []
+  sth.fetch do |row|
+    # This is hack to make a bnode with a specific id
+    uri = RDF::Node.new
+    uri.id = RDF::URI.new(row[:uri])
+    if row[:type_cd] == 10 
+      data << RDF::Statement(uri, work_phone_pred, row[:phone_number])
+    elsif row[:type_cd] == 11
+      data << RDF::Statement(uri, work_fax_pred, row[:phone_number])
+    end
+  end
+  return data
+end
+
+def generate_work_email_rdf(dbh)
+  sql = <<-EOH
+select vivo.uri, ps.ufid, ps.work_email 
+from psIngestDev.ps_work_email ps, vivo_blank_node_people vivo
+where ps.ufid = vivo.ufid
+  EOH
+
+  work_email_pred = RDF::URI.new('http://vivoweb.org/ontology/core#workEmail')
+
+  sth = dbh.execute(sql)
+  data = []
+  sth.fetch do |row|
+    # This is hack to make a bnode with a specific id
+    uri = RDF::Node.new
+    uri.id = RDF::URI.new(row[:uri])
+    if row[:work_email] != ""
+      data << RDF::Statement(uri, work_email_pred, row[:work_email])
+    end
+  end
+  return data
+end
+
 def generate_ufid_rdf(dbh)
   sql = <<-EOH
 select uri, ufid from vivo_blank_node_people
@@ -172,6 +219,9 @@ begin
   dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
   create_blank_nodes(dbh)
   name_rdf = generate_name_rdf(dbh)
+  phone_number_rdf = generate_phone_number_rdf(dbh)
+  work_email_rdf = generate_work_email_rdf(dbh)
+  
   ufid_rdf = generate_ufid_rdf(dbh)
   type_rdf = generate_type_rdf(dbh)
 
@@ -183,6 +233,17 @@ begin
     end
   end
 
+  RDF::Writer.open('new_faculty_phone_numbers.nt') do |writer|
+    phone_number_rdf.each do |datum|
+      writer << datum
+    end
+  end
+
+  RDF::Writer.open('new_faculty_work_email.nt') do |writer|
+    work_email_rdf.each do |datum|
+      writer << datum
+    end
+  end
   RDF::Writer.open('new_faculty_ufids.nt') do |writer|
     ufid_rdf.each do |datum|
       writer << datum
