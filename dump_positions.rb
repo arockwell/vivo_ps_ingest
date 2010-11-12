@@ -35,6 +35,9 @@ order by ufid
 end
 
 def cache_ps_positions(dbh, positions)
+  clear_table_sql = "delete from ps_positions"
+  dbh.do(clear_table_sql)
+  
   insert_sql = "insert into ps_positions (ufid, dept_id, job_title, start_year) values (?, ?, ?, ?)"
   sth = dbh.prepare(insert_sql)
   positions.each do |pos|
