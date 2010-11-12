@@ -55,6 +55,9 @@ where ps.ufid = vivo.ufid
   last_name_pred = RDF::URI.new('http://xmlns.com/foaf/0.1/lastName')
   middle_name_pred = RDF::URI.new('http://vivoweb.org/ontology/core#middleName') 
   label_pred = RDF::URI.new('http://www.w3.org/2000/01/rdf-schema#label')
+  prefix_name_pred = RDF::URI.new('http://purl.org/ontology/bibo/prefixName')
+  suffix_name_pred = RDF::URI.new('http://purl.org/ontology/bibo/suffixName')
+
   sth = dbh.execute(join_names_to_blank_nodes)
   data = []
   sth.fetch do |row|
@@ -67,6 +70,10 @@ where ps.ufid = vivo.ufid
       data << RDF::Statement(uri, last_name_pred, row[:name_text])
     elsif row[:type_cd] == 37 && row[:type_cd] != ""
       data << RDF::Statement(uri, middle_name_pred, row[:name_text])
+    elsif row[:type_cd] == 38
+      data << RDF::Statement(uri, prefix_name_pred, row[:name_text])
+    elsif row[:type_cd] == 39
+      data << RDF::Statement(uri, suffix_name_pred, row[:name_text])
     elsif row[:type_cd] == 232
       data << RDF::Statement(uri, label_pred, row[:name_text])
     end
@@ -135,6 +142,26 @@ select uri, ufid from vivo_blank_node_people
     uri = RDF::Node.new
     uri.id = RDF::URI.new(row[:uri])
     data << RDF::Statement(uri, ufid_pred, row[:ufid])
+  end
+  return data
+end
+
+def generate_glid_rdf(dbh)
+  sql = <<-EOH
+select vivo.uri, ps.ufid, ps.glid
+from psIngestDev.ps_glid ps, vivo_blank_node_people vivo
+where ps.ufid = vivo.ufid
+  EOH
+
+  gatorlink_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/gatorlink')
+
+  sth = dbh.execute(sql)
+  data = []
+  sth.fetch do |row|
+    # This is hack to make a bnode with a specific id
+    uri = RDF::Node.new
+    uri.id = RDF::URI.new(row[:uri])
+    data << RDF::Statement(uri, gatorlink_pred, row[:glid])
   end
   return data
 end
@@ -220,6 +247,8 @@ begin
   work_email_rdf = generate_work_email_rdf(dbh)
   
   ufid_rdf = generate_ufid_rdf(dbh)
+  glid_rdf = generate_glid_rdf(dbh)
+
   type_rdf = generate_type_rdf(dbh)
 
   pos_rdf = generate_pos_rdf(dbh)
@@ -243,6 +272,12 @@ begin
   end
   RDF::Writer.open('new_faculty_ufids.nt') do |writer|
     ufid_rdf.each do |datum|
+      writer << datum
+    end
+  end
+
+  RDF::Writer.open('new_faculty_glid.nt') do |writer|
+    glid_rdf.each do |datum|
       writer << datum
     end
   end
