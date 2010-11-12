@@ -27,11 +27,8 @@ not exists (
   ufid_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/ufid')
   blank_node_people = []
   sth.fetch do |row|
-    # ignore ufids with leading 0's since they are not in vivo correctly
-    if row[:ufid][0..0] != "0"
-      blank_node = RDF::Node.new
-      blank_node_people << { :uri => blank_node, :ufid => row[:ufid] }
-    end
+    blank_node = RDF::Node.new
+    blank_node_people << { :uri => blank_node, :ufid => row[:ufid] }
   end
 
   clear_table_sql = "delete from vivo_blank_node_people"
