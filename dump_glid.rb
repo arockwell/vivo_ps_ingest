@@ -9,7 +9,7 @@ def dump_glid_from_ps
   begin 
     dbh = DBI.connect(ENV['ps_odbc_connection'], ENV['ps_glid'], ENV['ps_glid_pw'])
 
-    sql = "select oprid as ufid, useridalias as glid from dbo.t_uf_pa_gl_acct"
+    sql = "select distinct oprid as ufid, useridalias as glid from dbo.t_uf_pa_gl_acct"
 
     sth = dbh.execute(sql)
     data = []
