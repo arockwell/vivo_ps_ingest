@@ -1,7 +1,6 @@
 #!/usr/bin/ruby
 
-require 'dbi'
-require '~/.passwords.rb'
+require 'conf.rb'
 
 # Dump work phone, work fax from ps
 def dump_ps_phone_numbers

@@ -1,10 +1,6 @@
 #!/usr/bin/ruby
 
-require 'rubygems'
-require 'dbi'
-require 'rdf/raptor'
-require 'rdf/ntriples'
-require '~/.passwords.rb'
+require 'conf.rb'
 
 # As a prereq for running this script, run the following:
 # dump_faculty_names.rb

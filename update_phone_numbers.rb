@@ -1,8 +1,6 @@
 #!/usr/bin/ruby
 
-require 'rubygems'
-require 'vivo_web_api'
-require '~/.passwords.rb'
+require 'conf.rb'
 
 def find_phone_numbers()
   sparql = <<-EOH

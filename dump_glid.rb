@@ -1,8 +1,6 @@
 #!/usr/bin/ruby
 
-require 'rubygems'
-require 'dbi'
-require '~/.passwords.rb'
+require 'conf.rb'
 
 # Dump out glid
 def dump_glid_from_ps

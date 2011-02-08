@@ -1,9 +1,8 @@
 #!/usr/bin/ruby
 
-#Dump information about positions from stu5 and per_ufau
+require 'conf.rb'
 
-require 'dbi'
-require '~/.passwords.rb'
+#Dump information about positions from stu5 and per_ufau
 
 def dump_positions_in_ps(dbh)
   sql = <<-EOH

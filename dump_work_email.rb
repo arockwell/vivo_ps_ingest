@@ -1,8 +1,6 @@
 #!/usr/bin/ruby
 
-require 'rubygems'
-require 'dbi'
-require '~/.passwords.rb'
+require 'conf.rb'
 
 # Dump out work_email
 def dump_work_email_from_ps

@@ -1,9 +1,6 @@
 #!/usr/bin/ruby
 
-require 'rubygems'
-require 'dbi'
-require 'vivo_web_api'
-require '~/.passwords'
+require 'conf.rb'
 
 def find_orgs()
   sparql = <<-EOH

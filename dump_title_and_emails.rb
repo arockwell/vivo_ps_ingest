@@ -1,10 +1,8 @@
 #!/usr/bin/ruby
-#
+
+require 'conf.rb'
+
 #Dump information from dbo.t_uf_dir_emp_stu_1. Key peieces of info are working title, work email, and ufid
-
-require 'dbi'
-require '~/.passwords.rb'
-
 dbh = DBI.connect(ENV['ps_odbc_connection'], ENV['ps_glid'], ENV['ps_glid_pw'])
 
 sql = <<-EOH

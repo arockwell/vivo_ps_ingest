@@ -1,8 +1,6 @@
-
 #!/usr/bin/ruby
 
-require 'dbi'
-require '~/.passwords.rb'
+require 'conf.rb'
 
 # Dump out first name, last name, display name and middle name from people soft
 dbh = DBI.connect('dbi:ODBC:erpprod', ENV['ps_glid'], ENV['ps_glid_pw'])

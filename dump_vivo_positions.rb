@@ -1,17 +1,19 @@
-#!/usr/bin/ruby
+#!/usr/bin/ruby 
 
 require 'conf.rb'
 
-def find_ufids()
+def find_positions()
   sparql = <<-EOH
 PREFIX ufVivo: <http://vivo.ufl.edu/ontology/vivo-ufl/>
+PREFIX core: <http://vivoweb.org/ontology/core#>
 
-select ?person ?ufid 
+select ?pos ?org ?dept_id 
 where 
 {
-  ?person ufVivo:ufid ?ufid .
+  ?pos ufVivo:deptIDofPosition ?dept_id .
+  ?pos core:positionInOrganization ?org
 }
-order by ?ufid
+order by ?dept_id
   EOH
 
   hostname = ENV['vivo_hostname']
@@ -28,13 +30,13 @@ def cache_vivo_results_in_db(results)
   begin
     dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
 
-    clear_table_sql = "delete from vivo_ufids"
+    clear_table_sql = "delete from vivo_positions"
     dbh.do(clear_table_sql)
 
-    insert_sql = "insert into vivo_ufids (uri, ufid) values (?, ?)"
+    insert_sql = "insert into vivo_positions (uri, org_uri, dept_id) values (?, ?, ?)"
     sth = dbh.prepare(insert_sql)
     results.each do |result|
-      sth.execute(result[:person], result[:ufid].value)
+      sth.execute(result[:pos], result[:org], result[:dept_id].value)
     end
     sth.finish
     dbh.commit
@@ -47,5 +49,5 @@ def cache_vivo_results_in_db(results)
   end
 end
 
-ufid = find_ufids
-cache_vivo_results_in_db(ufid)
+positions = find_positions
+cache_vivo_results_in_db(positions)

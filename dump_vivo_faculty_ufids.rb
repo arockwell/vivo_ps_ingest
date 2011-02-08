@@ -2,14 +2,16 @@
 
 require 'conf.rb'
 
-def find_ufids()
+def find_faculty_ufids()
   sparql = <<-EOH
 PREFIX ufVivo: <http://vivo.ufl.edu/ontology/vivo-ufl/>
-
+PREFIX core: <http://vivoweb.org/ontology/core#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 select ?person ?ufid 
 where 
 {
   ?person ufVivo:ufid ?ufid .
+  ?person rdf:type core:FacultyMember
 }
 order by ?ufid
   EOH
@@ -28,10 +30,10 @@ def cache_vivo_results_in_db(results)
   begin
     dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
 
-    clear_table_sql = "delete from vivo_ufids"
+    clear_table_sql = "delete from vivo_faculty_ufids"
     dbh.do(clear_table_sql)
 
-    insert_sql = "insert into vivo_ufids (uri, ufid) values (?, ?)"
+    insert_sql = "insert into vivo_faculty_ufids (uri, ufid) values (?, ?)"
     sth = dbh.prepare(insert_sql)
     results.each do |result|
       sth.execute(result[:person], result[:ufid].value)
@@ -47,5 +49,5 @@ def cache_vivo_results_in_db(results)
   end
 end
 
-ufid = find_ufids
+ufid = find_faculty_ufids
 cache_vivo_results_in_db(ufid)
