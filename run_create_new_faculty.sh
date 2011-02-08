@@ -9,9 +9,8 @@ ruby dump_vivo_orgs.rb
 echo "Dump faculty names in peoplesoft"
 ruby dump_faculty_names.rb
 
-# Skip this for now since the table is huge, result is already cached.
-#echo "Dump glid in peoplesoft"
-#ruby dump_glid.rb
+echo "Dump glid in peoplesoft"
+ruby dump_glid.rb
 
 echo "Dump phone numbers in peoplesoft"
 ruby dump_phone_numbers.rb
