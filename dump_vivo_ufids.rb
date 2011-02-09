@@ -6,10 +6,11 @@ def find_ufids()
   sparql = <<-EOH
 PREFIX ufVivo: <http://vivo.ufl.edu/ontology/vivo-ufl/>
 
-select ?person ?ufid 
+select distinct ?person ?ufid
 where 
 {
-  ?person ufVivo:ufid ?ufid .
+  ?person ufVivo:ufid ?ufid_with_optional_type .
+  let (?ufid := str(?ufid_with_optional_type))
 }
 order by ?ufid
   EOH

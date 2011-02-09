@@ -7,7 +7,7 @@ def find_faculty_ufids()
 PREFIX ufVivo: <http://vivo.ufl.edu/ontology/vivo-ufl/>
 PREFIX core: <http://vivoweb.org/ontology/core#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-select ?person ?ufid 
+select distinct ?person str(?ufid) 
 where 
 {
   ?person ufVivo:ufid ?ufid .

@@ -8,11 +8,12 @@ PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ufVivo: <http://vivo.ufl.edu/ontology/vivo-ufl/>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
-select ?org ?dept_id
+select distinct ?org ?dept_id
 where
 {
   ?org rdf:type foaf:Organization .
-  ?org ufVivo:deptID ?dept_id
+  ?org ufVivo:deptID ?dept_id_with_optional_type
+  let (?dept_id := str(?dept_id_with_optional_type))
 }
   EOH
 
