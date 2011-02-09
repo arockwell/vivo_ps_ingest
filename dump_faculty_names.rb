@@ -1,8 +1,6 @@
 #!/usr/bin/ruby
 
-require 'rubygems'
-require 'dbi'
-require '~/.passwords.rb'
+require 'conf.rb'
 
 # Dump out first name, last name, display name and middle name from people soft
 def dump_names_from_ps
@@ -14,10 +12,12 @@ select
   distinct stu4.uf_uuid as ufid,
   stu4.uf_type_cd as type_cd,
   stu4.uf_name_txt name_text
-from dbo.t_uf_dir_emp_stu_4 stu4 join dbo.t_uf_dir_emp_stu_5 stu5 on (stu4.uf_uuid = stu5.uf_uuid1)
+from dbo.t_uf_dir_emp_stu_4 stu4 join dbo.t_uf_dir_emp_stu_5 stu5 on (stu4.uf_uuid = stu5.uf_uuid1) 
+join dbo.t_uf_dir_emp_stu_1 stu1 on (stu5.uf_uuid1 = stu1.uf_identifier)
 where (stu4.uf_type_cd = '232' or stu4.uf_type_cd = '35' or stu4.uf_type_cd = '36' or stu4.uf_type_cd='37'
  or stu4.uf_type_cd='38' or stu4.uf_type_cd='39')
 and (stu5.uf_type_cd = '192' or stu5.uf_type_cd = '219')
+and (uf_security_flg = 'N' and uf_protect_flg = 'N')
     EOH
 
     sth = dbh.execute(sql)
