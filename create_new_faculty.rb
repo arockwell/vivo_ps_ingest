@@ -11,11 +11,14 @@ require 'conf.rb'
 def create_blank_nodes(dbh)
   # Find all ufids not in our vivo
   sql = <<-EOH
-select distinct ps.ufid from psIngestDev.ps_names ps
+select distinct ps.ufid from psIngestDev.ps_names ps_names join psIngestDev.ps_types ps_types
+ on (ps_names.ufid = ps_types.ufid)
 where
 not exists (
-  select vivo.ufid from psIngestDev.vivo_ufids vivo where ps.ufid = vivo.ufid
+  select vivo.ufid from psIngestDev.vivo_ufids vivo where ps_names.ufid = vivo.ufid
 )
+and (ps_types.type_cd = '192' or ps_types.type_cd = '219')
+and (ps_privacy_flags.security_flag = 'N' and ps_privacy_flags.protect_flg = 'N')
   EOH
 
   sth = dbh.execute(sql)
@@ -124,6 +127,28 @@ where ps.ufid = vivo.ufid
   return data
 end
 
+def generate_work_title_rdf(dbh)
+  sql = <<-EOH
+select vivo.uri, ps.ufid, ps.work_title 
+from psIngestDev.ps_work_title ps, vivo_blank_node_people vivo
+where ps.ufid = vivo.ufid
+  EOH
+
+  hr_job_title = RDF::URI.new('http://vitro.mannlib.cornell.edu/ns/vitro/0.7#moniker')
+
+  sth = dbh.execute(sql)
+  data = []
+  sth.fetch do |row|
+    # This is hack to make a bnode with a specific id
+    uri = RDF::Node.new
+    uri.id = RDF::URI.new(row[:uri])
+    if row[:work_title] != ""
+      data << RDF::Statement(uri, hr_job_title, row[:work_title])
+    end
+  end
+  return data
+end
+
 def generate_ufid_rdf(dbh)
   sql = <<-EOH
 select uri, ufid from vivo_blank_node_people
@@ -172,6 +197,9 @@ select uri, ufid from vivo_blank_node_people
     RDF::URI.new('http://xmlns.com/foaf/0.1/Person'), 
     RDF::URI.new('http://vivoweb.org/ontology/core#FacultyMember') ]
 
+  harvested_by_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/harvestedBy')
+  date_harvested_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/dateHarvested')
+
   sth = dbh.execute(sql)
   data = []
   sth.fetch do |row|
@@ -181,7 +209,12 @@ select uri, ufid from vivo_blank_node_people
     person_types.each do |person_type|
       data << RDF::Statement(uri, type_pred, person_type)
     end
+    # set harvester properties
+    data << RDF::Statement.new(uri, harvested_by_pred, 'PeopleSoft-Library Harvester')
+    data << RDF::Statement.new(uri, date_harvested_pred, Time.now.localtime.strftime("%Y-%m-%d"))
   end
+
+
   return data
 end
 
@@ -199,11 +232,15 @@ where ps.dept_id = vivo_orgs.dept_id and ps.ufid = blank.ufid
   dependent_resource_type_pred = RDF::URI.new('http://vivoweb.org/ontology/core#DependentResource')
 
   position_label_pred = RDF::URI.new('http://www.w3.org/2000/01/rdf-schema#label')
+  hr_job_title_pred = RDF::URI.new('http://vivoweb.org/ontology/core#hrJobTitle')
   position_for_person_pred = RDF::URI.new('http://vivoweb.org/ontology/core#positionForPerson')
   position_in_organization_pred = RDF::URI.new('http://vivoweb.org/ontology/core#positionInOrganization')
   organization_for_position_pred = RDF::URI.new('http://vivoweb.org/ontology/core#organizationForPosition')
   dept_id_of_position_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/deptIDofPosition')
   start_year_pred = RDF::URI.new('http://vivoweb.org/ontology/core#startYear')
+
+  harvested_by_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/harvestedBy')
+  date_harvested_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/dateHarvested')
 
   sth = dbh.execute(sql)
   data = []
@@ -222,6 +259,7 @@ where ps.dept_id = vivo_orgs.dept_id and ps.ufid = blank.ufid
     data << RDF::Statement.new(pos_uri, type_pred, faculty_position_type_pred)
     data << RDF::Statement.new(pos_uri, type_pred, dependent_resource_type_pred)
     data << RDF::Statement.new(pos_uri, position_label_pred, row[:job_title])
+    data << RDF::Statement.new(pos_uri, hr_job_title_pred, row[:job_title])
     data << RDF::Statement.new(pos_uri, dept_id_of_position_pred, row[:dept_id])
     data << RDF::Statement.new(pos_uri, start_year_pred, row[:start_year])
 
@@ -231,6 +269,10 @@ where ps.dept_id = vivo_orgs.dept_id and ps.ufid = blank.ufid
 
     # connect org -> pos
     data << RDF::Statement.new(org_uri, organization_for_position_pred, pos_uri)
+
+    # set harvester properties
+    data << RDF::Statement.new(pos_uri, harvested_by_pred, 'PeopleSoft-Library Harvester')
+    data << RDF::Statement.new(pos_uri, date_harvested_pred, Time.now.localtime.strftime("%Y-%m-%d"))
   end
   return data
 end
@@ -241,6 +283,7 @@ begin
   name_rdf = generate_name_rdf(dbh)
   phone_number_rdf = generate_phone_number_rdf(dbh)
   work_email_rdf = generate_work_email_rdf(dbh)
+  work_title_rdf = generate_work_title_rdf(dbh)
   
   ufid_rdf = generate_ufid_rdf(dbh)
   glid_rdf = generate_glid_rdf(dbh)
@@ -266,6 +309,13 @@ begin
       writer << datum
     end
   end
+
+  RDF::Writer.open('new_faculty_work_title.nt') do |writer|
+    work_title_rdf.each do |datum|
+      writer << datum
+    end
+  end
+
   RDF::Writer.open('new_faculty_ufids.nt') do |writer|
     ufid_rdf.each do |datum|
       writer << datum

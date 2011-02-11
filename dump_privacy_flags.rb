@@ -12,7 +12,6 @@ select
   uf_security_flg as security_flag,
   uf_protect_flg as protect_flag
 from dbo.t_uf_dir_emp_stu_1
-order by uf_identifier
   EOH
 
   sth = dbh.execute(sql)
