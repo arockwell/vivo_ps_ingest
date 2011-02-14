@@ -2,12 +2,6 @@
 
 require 'conf.rb'
 
-# As a prereq for running this script, run the following:
-# dump_faculty_names.rb
-# dump_vivo_ufids.rb
-# dump_vivo_orgs.rb
-# dump_positions.rb
-
 def create_blank_nodes(dbh)
   # Find all ufids not in our vivo
   sql = <<-EOH
@@ -279,17 +273,31 @@ end
 
 begin
   dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
+  puts "Create blank nodes"
   create_blank_nodes(dbh)
+
+  puts "Generate name rdf"
   name_rdf = generate_name_rdf(dbh)
+  
+  puts "Generate phone number rdf"
   phone_number_rdf = generate_phone_number_rdf(dbh)
+
+  puts "Generate work email rdf"
   work_email_rdf = generate_work_email_rdf(dbh)
+
+  puts "Generate work title rdf"
   work_title_rdf = generate_work_title_rdf(dbh)
   
+  puts "Generate ufid rdf"
   ufid_rdf = generate_ufid_rdf(dbh)
+
+  puts "Generate glid rdf"
   glid_rdf = generate_glid_rdf(dbh)
 
+  puts "Generate type rdf"
   type_rdf = generate_type_rdf(dbh)
 
+  puts "Generate position rdf"
   pos_rdf = generate_pos_rdf(dbh)
 
   RDF::Writer.open('new_faculty_names.nt') do |writer|
