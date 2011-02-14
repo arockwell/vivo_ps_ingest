@@ -5,14 +5,16 @@ require 'conf.rb'
 def create_blank_nodes(dbh)
   # Find all ufids not in our vivo
   sql = <<-EOH
-select distinct ps.ufid from psIngestDev.ps_names ps_names join psIngestDev.ps_types ps_types
- on (ps_names.ufid = ps_types.ufid)
+select distinct ps_directory_relationships.ufid from
+  psIngestDev.ps_directory_relationships ps_directory_relationships,
+  psIngestDev.ps_employee_records ps_employee_records 
 where
-not exists (
-  select vivo.ufid from psIngestDev.vivo_ufids vivo where ps_names.ufid = vivo.ufid
-)
-and (ps_types.type_cd = '192' or ps_types.type_cd = '219')
-and (ps_privacy_flags.security_flag = 'N' and ps_privacy_flags.protect_flg = 'N')
+  not exists (
+    select vivo.ufid from psIngestDev.vivo_ufids vivo where ps_directory_relationships.ufid = vivo.ufid
+  )
+  and (ps_directory_relationships.type_cd = '192' or ps_directory_relationships.type_cd = '219')
+  and (ps_employee_records.security_flag = 'N' and ps_employee_records.protect_flag = 'N')
+  and (ps_directory_relationships.ufid = ps_employee_records.ufid)
   EOH
 
   sth = dbh.execute(sql)
