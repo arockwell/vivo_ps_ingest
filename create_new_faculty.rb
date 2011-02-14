@@ -111,8 +111,8 @@ end
 
 def generate_work_email_rdf(dbh)
   sql = <<-EOH
-select vivo.uri, ps.ufid, ps.work_email 
-from psIngestDev.ps_work_email ps, vivo_blank_node_people vivo
+select vivo.uri, ps.ufid, ps.uf_email as work_email
+from psIngestDev.ps_employee_records ps, vivo_blank_node_people vivo
 where ps.ufid = vivo.ufid
   EOH
 
@@ -133,8 +133,8 @@ end
 
 def generate_work_title_rdf(dbh)
   sql = <<-EOH
-select vivo.uri, ps.ufid, ps.work_title 
-from psIngestDev.ps_work_title ps, vivo_blank_node_people vivo
+select vivo.uri, ps.ufid, ps.work_title
+from psIngestDev.ps_employee_records ps, vivo_blank_node_people vivo
 where ps.ufid = vivo.ufid
   EOH
 
@@ -224,9 +224,13 @@ end
 
 def generate_pos_rdf(dbh)
   sql = <<-EOH
-select blank.uri as person_uri, vivo_orgs.uri as org_uri, ps.dept_id, ps.ufid, ps.job_title, ps.start_year
-from psIngestDev.ps_positions ps, psIngestDev.vivo_orgs vivo_orgs, vivo_blank_node_people blank
-where ps.dept_id = vivo_orgs.dept_id and ps.ufid = blank.ufid
+select blank.uri as person_uri, vivo_orgs.uri as org_uri, ps.dept_id, ps.ufid, ps_position_titles.job_title, year(ps.begin_date) as start_year
+from 
+  psIngestDev.ps_directory_relationships ps, 
+  psIngestDev.ps_position_titles ps_position_titles, 
+  psIngestDev.vivo_orgs vivo_orgs, 
+  vivo_blank_node_people blank
+where ps.dept_id = vivo_orgs.dept_id and ps.ufid = blank.ufid and ps_position_titles.ufid = ps.ufid and ps_position_titles.dept_id = ps.dept_id
   EOH
   
   type_pred = RDF::URI.new('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
