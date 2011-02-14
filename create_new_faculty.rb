@@ -78,8 +78,8 @@ end
 
 def generate_phone_number_rdf(dbh)
   sql = <<-EOH
-select vivo.uri, ps.ufid, ps.type_cd, ps.phone_number 
-from psIngestDev.ps_phone_numbers ps, vivo_blank_node_people vivo
+select vivo.uri, ps.ufid, ps.type_cd, ps.area_code, ps.extension, ps.phone_number 
+from psIngestDev.ps_phone_numbers ps, psIngestDev.vivo_blank_node_people vivo
 where ps.ufid = vivo.ufid
   EOH
 
@@ -92,10 +92,18 @@ where ps.ufid = vivo.ufid
     # This is hack to make a bnode with a specific id
     uri = RDF::Node.new
     uri.id = RDF::URI.new(row[:uri])
-    if row[:type_cd] == 10 
-      data << RDF::Statement(uri, work_phone_pred, row[:phone_number])
-    elsif row[:type_cd] == 11
-      data << RDF::Statement(uri, work_fax_pred, row[:phone_number])
+
+    # write out phone number in format NNN.NNN.NNNN xNNNN
+    area_code = row[:area_code].nil? ? "" : row[:area_code].strip
+    phone_number = row[:phone_number].nil? ? "" : row[:phone_number].strip
+    extension = row[:extension].nil? ? "" : row[:extension].strip
+    phone = "#{area_code}.#{phone_number.slice(0..2)}.#{phone_number.slice(3..6)}"
+    phone = extension == "" ? phone : phone + " x" + extension
+
+    if row[:type_cd] == "10"
+      data << RDF::Statement(uri, work_phone_pred, phone)
+    elsif row[:type_cd] == "11"
+      data << RDF::Statement(uri, work_fax_pred, phone)
     end
   end
   return data
