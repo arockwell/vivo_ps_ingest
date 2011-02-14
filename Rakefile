@@ -1,0 +1,21 @@
+current_dir = File.dirname(__FILE__)
+
+task :dump_vivo_data do
+  vivo_dump_programs = %w(dump_vivo_ufids.rb dump_vivo_orgs.rb)
+  vivo_dump_programs.each do |vivo_dump_program|
+    puts "Running #{vivo_dump_program}"
+    %x["#{current_dir}/#{vivo_dump_program}"]
+  end
+end
+
+task :dump_ps_data do
+  ps_dump_programs = %w(import_ps_db.rb)
+  ps_dump_programs.each do |ps_dump_program|
+    puts "Running #{ps_dump_program}"
+    %x["#{current_dir}/#{ps_dump_program}"]
+  end
+end
+  
+task :create_new_faculty do
+  %x("#{current_dir}/#{create_new_faculty.rb}")
+end
