@@ -92,9 +92,10 @@ module VivoPsIngest
       ps_person = difference[:removals]
     end
     
+    # this does not test anything
     it "should update people" do
       client = UpdatePeople.new
-#      client.update_people
+      differences = client.update_people
     end
 
     it "should create rdf of their working title from peoplesoft" do

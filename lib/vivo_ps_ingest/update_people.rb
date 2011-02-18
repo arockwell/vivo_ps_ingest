@@ -117,13 +117,13 @@ limit 10
       updates = { :additions => RDF::Graph.new, :removals => RDF::Graph.new}
       results.keys.each do |ufid|
         dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
-        difference = compare_person_in_vivo_and_ps(dbh, uri, ufid)
+        difference = compare_person_in_vivo_and_ps(dbh, results[ufid], ufid)
         if difference != {}
           updates[:additions].insert(difference[:additions])
           updates[:removals].insert(difference[:removals])
         end
-        return difference
       end
+      return updates
     end
 
     def compare_person_in_vivo_and_ps(dbh, uri, ufid)
