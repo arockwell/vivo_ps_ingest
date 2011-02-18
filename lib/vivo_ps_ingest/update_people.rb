@@ -20,10 +20,12 @@ module VivoPsIngest
     def retrieve_person_from_vivo(ufid)
       sparql = <<-EOH
 PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX bibo: <http://purl.org/ontology/bibo/>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX ufVivo: <http://vivo.ufl.edu/ontology/vivo-ufl/>
 PREFIX core: <http://vivoweb.org/ontology/core#>
+PREFIX vitro: <http://vitro.mannlib.cornell.edu/ns/vitro/0.7#>
 
 construct {
   ?person ufVivo:ufid ?ufid .
@@ -38,7 +40,11 @@ construct {
 
   ?person core:workEmail ?work_email .
 
-  ?person rdf:type ?type
+  ?person rdfs:label ?label .
+  
+  ?person ufVivo:gatorlink ?glid . 
+   
+  ?person vitro:moniker ?moniker
 }
 where
 {
@@ -56,6 +62,12 @@ where
 
   optional { ?person core:workEmail ?work_email }
 
+  optional { ?person rdfs:label ?label }
+  
+  optional { ?person ufVivo:gatorlink ?glid }
+  
+  optional { ?person vitro:moniker ?moniker }
+
   ?person rdf:type ?type
 }
       EOH
@@ -68,6 +80,57 @@ where
       results = sparql_client.execute_sparql_construct(username, password, sparql)
       
       return results
+    end
+
+    # @TODO remove artificial limit to speed up tests
+    def find_all_ufids_in_vivo
+      sparql = <<-EOH
+PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX ufVivo: <http://vivo.ufl.edu/ontology/vivo-ufl/>
+
+select distinct ?uri ?ufid
+where
+{
+  ?uri rdf:type foaf:Person .
+  ?uri ufVivo:ufid ?raw_ufid .
+  let (?ufid := str(?raw_ufid))
+}
+limit 10
+      EOH
+      
+      sparql_client = VivoWebApi::Client.new(ENV['vivo_hostname'])
+      results = sparql_client.execute_sparql_select(ENV['vivo_username'], ENV['vivo_password'], sparql)
+
+      ufid_uri_map = {}
+      results.each do |result|
+        ufid = result[:ufid].to_s
+        ufid_uri_map[ufid] = result[:uri]
+      end
+        
+      return ufid_uri_map
+
+    end
+
+    def update_people
+      results = find_all_ufids_in_vivo
+      updates = { :additions => RDF::Graph.new, :removals => RDF::Graph.new}
+      results.keys.each do |ufid|
+        dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
+        difference = compare_person_in_vivo_and_ps(dbh, uri, ufid)
+        if difference != {}
+          updates[:additions].insert(difference[:additions])
+          updates[:removals].insert(difference[:removals])
+        end
+        return difference
+      end
+    end
+
+    def compare_person_in_vivo_and_ps(dbh, uri, ufid)
+        vivo_rdf = retrieve_person_from_vivo(ufid)
+        ps_rdf = create_rdf_for_person_in_ps(dbh, uri, ufid)
+        difference = difference_between_graphs(vivo_rdf, ps_rdf)
+        return difference
     end
 
     def create_rdf_for_person_in_ps(dbh, uri, ufid)
@@ -91,7 +154,8 @@ where
       
       graph = RDF::Graph.new
       sth.fetch do |row|
-        graph << RDF::Statement(uri, hr_job_title_pred, row[:work_title])
+        work_title = RDF::Literal.new(row[:work_title], :datatype => RDF::XSD.string)
+        graph << RDF::Statement(uri, hr_job_title_pred, work_title)
       end
       
       return graph
@@ -106,7 +170,8 @@ where
       sth.execute(ufid)
       graph = RDF::Graph.new 
       sth.fetch do |row|
-        graph << RDF::Statement(uri, gatorlink_pred, row[:glid])
+        glid = RDF::Literal.new(row[:glid], :datatype => RDF::XSD.string)
+        graph << RDF::Statement(uri, gatorlink_pred, glid)
       end
       return graph
     end
@@ -150,7 +215,8 @@ where
         elsif row[:type_cd] == 39
           graph << RDF::Statement(uri, suffix_name_pred, row[:name_text])
         elsif row[:type_cd] == 232
-          graph << RDF::Statement(uri, label_pred, row[:name_text])
+          label = RDF::Literal.new(row[:name_text], :language => 'en-US')
+          graph << RDF::Statement(uri, label_pred, label)
         end
       end
       return graph
@@ -174,7 +240,7 @@ where ufid = ?
         area_code = row[:area_code].nil? ? "" : row[:area_code].strip
         phone_number = row[:phone_number].nil? ? "" : row[:phone_number].strip
         extension = row[:extension].nil? ? "" : row[:extension].strip
-        phone = "#{area_code}.#{phone_number.slice(0..2)}.#{phone_number.slice(3..6)}"
+        phone = "#{area_code}#{phone_number.slice(0..2)}#{phone_number.slice(3..6)}"
         phone = extension == "" ? phone : phone + " x" + extension
 
         if row[:type_cd] == "10"

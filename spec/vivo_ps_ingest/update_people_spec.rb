@@ -4,7 +4,7 @@ module VivoPsIngest
   describe UpdatePeople do
     before(:each) do
       @ufid = "81036590"
-      @uri = "http://vivo.ufl.edu/individual/n1639"
+      @uri = RDF::URI.new("http://vivo.ufl.edu/individual/n1639")
       @predicates = {
         :first_name => RDF::URI.new('http://xmlns.com/foaf/0.1/firstName'),
         :last_name => RDF::URI.new('http://xmlns.com/foaf/0.1/lastName'),
@@ -53,19 +53,47 @@ module VivoPsIngest
       differences[:additions].has_statement?(phone_statement).should == true
     end
 
+    it "should show no difference between person_alex.ps.nt and person_alex.nt" do
+      person_1 = RDF::Graph.load(File.dirname(__FILE__) + '/../test/person_alex_ps.nt')
+      person_3 = RDF::Graph.load(File.dirname(__FILE__) + '/../test/person_alex.nt')
+      update_people = UpdatePeople.new
+      differences = update_people.difference_between_graphs(person_1, person_3)
+      differences.should == {}
+    end
+
     it "should retrieve a person record from vivo" do
       client = UpdatePeople.new
       results = client.retrieve_person_from_vivo(@ufid)
-      results.size.should == 11
+      results.size.should == 9
       check_predicate_value(results, @predicates[:first_name], "Alexander")
       check_predicate_value(results, @predicates[:last_name], "Rockwell")
       check_predicate_value(results, @predicates[:middle_name], "H")
       check_predicate_value(results, @predicates[:prefix_name], "Mr")
       check_predicate_value(results, @predicates[:work_phone], "3522732590")
       check_predicate_value(results, @predicates[:work_email], "alexhr@ufl.edu")
-      results.query(:predicate => RDF::URI.new('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')).size.should == 5
 
       results_2 = results
+    end
+
+    it "should find all ufids in vivo" do
+      client = UpdatePeople.new
+      results = client.find_all_ufids_in_vivo
+      results.size.should == 10
+    end
+
+    it "should compare alex in vivo and alex in ps and find they are same" do
+      dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
+      update_people = UpdatePeople.new
+
+      difference = update_people.compare_person_in_vivo_and_ps(dbh, @uri, @ufid)
+      difference.should == {}
+      vivo_person = difference[:additions]
+      ps_person = difference[:removals]
+    end
+    
+    it "should update people" do
+      client = UpdatePeople.new
+#      client.update_people
     end
 
     it "should create rdf of their working title from peoplesoft" do
@@ -108,7 +136,7 @@ module VivoPsIngest
 
       update_people = UpdatePeople.new
       graph = update_people.create_phone_number_rdf(dbh, @uri, @ufid)
-      check_predicate_value(graph, @predicates[:work_phone], "352.273.2590")
+      check_predicate_value(graph, @predicates[:work_phone], "3522732590")
     end
 
     # tie everything together
@@ -124,12 +152,17 @@ module VivoPsIngest
       check_predicate_value(graph, @predicates[:last_name], "Rockwell")
       check_predicate_value(graph, @predicates[:middle_name], "H")
       check_predicate_value(graph, @predicates[:prefix_name], "Mr")
-      check_predicate_value(graph, @predicates[:work_phone], "352.273.2590")
+      check_predicate_value(graph, @predicates[:work_phone], "3522732590")
     end
 
     def check_predicate_value(graph, predicate, expected_value)
       predicate.nil?.should == false
       graph.query(:predicate => predicate).first.object.value.should == expected_value
+    end
+
+    def find_subgraph(graph, predicate)
+      predicate.nil?.should == false
+      graph.query(:predicate => predicate)
     end
     
   end
