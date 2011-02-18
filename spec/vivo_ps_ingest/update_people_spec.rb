@@ -98,6 +98,21 @@ module VivoPsIngest
       differences = client.update_people
     end
 
+    it "should serialize the graph to a file" do
+      filename = File.dirname(__FILE__) + '/../test/temp.nt'
+      graph = RDF::Graph.new
+      graph.load(File.dirname(__FILE__) + '/../test/person_1.nt')
+
+      update_people = UpdatePeople.new
+      update_people.serialize_graph(graph, filename)
+
+      graph_written = RDF::Graph.new
+      graph_written.load(filename)
+
+      val = graph.isomorphic_with? graph_written
+      val.should == true
+      File.delete(filename)
+    end
     it "should create rdf of their working title from peoplesoft" do
       dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
 

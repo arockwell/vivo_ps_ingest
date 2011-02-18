@@ -126,6 +126,14 @@ limit 10
       return updates
     end
 
+    def serialize_graph(graph, filename)
+      RDF::Writer.open(filename) do |writer|
+        graph.each_statement do |statement|
+          writer << statement
+        end
+      end
+    end
+
     def compare_person_in_vivo_and_ps(dbh, uri, ufid)
         vivo_rdf = retrieve_person_from_vivo(ufid)
         ps_rdf = create_rdf_for_person_in_ps(dbh, uri, ufid)
