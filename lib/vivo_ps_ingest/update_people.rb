@@ -1,5 +1,11 @@
+require 'logger'
+
 module VivoPsIngest
   class UpdatePeople
+    def initialize
+      @logger = Logger.new('update_people.log')
+    end
+
     # returns the difference between two graphs as a hash
     # :removals contains the graph to remove
     # :additions contains the graph to add
@@ -96,7 +102,6 @@ where
   ?uri ufVivo:ufid ?raw_ufid .
   let (?ufid := str(?raw_ufid))
 }
-limit 10
       EOH
       
       sparql_client = VivoWebApi::Client.new(ENV['vivo_hostname'])
@@ -116,6 +121,7 @@ limit 10
       results = find_all_ufids_in_vivo
       updates = { :additions => RDF::Graph.new, :removals => RDF::Graph.new}
       results.keys.each do |ufid|
+        @logger.info("Processing uri: #{results[ufid]} #{ufid}")
         dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
         difference = compare_person_in_vivo_and_ps(dbh, results[ufid], ufid)
         if difference != {}
