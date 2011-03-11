@@ -2,7 +2,10 @@
 
 require 'conf.rb'
 require 'rdf/isomorphic'
+require 'lib/vivo_ps_ingest/person.rb'
+require 'lib/vivo_ps_ingest/ps_person_serializer.rb'
 require 'lib/vivo_ps_ingest/update_people.rb'
+
 
 update_people = VivoPsIngest::UpdatePeople.new
 differences = update_people.update_people
