@@ -57,9 +57,12 @@ module VivoPsIngest
 
       ps_person_serializer = PsPersonSerializer.new
       graph = ps_person_serializer.create_rdf_for_person_in_ps(dbh, @uri, @ufid)
+      graph.each_statement.size.should == 10
       check_predicate_value(graph, @predicates[:hr_job_title], "Vivo Local Implementation Support")
+      check_predicate_value(graph, @predicates[:ufid], "81036590")
       check_predicate_value(graph, @predicates[:gatorlink], "alexhr")
       check_predicate_value(graph, @predicates[:work_email], "alexhr@ufl.edu")
+      check_predicate_value(graph, @predicates[:prefix_name], "Mr")
       check_predicate_value(graph, @predicates[:first_name], "Alexander")
       check_predicate_value(graph, @predicates[:last_name], "Rockwell")
       check_predicate_value(graph, @predicates[:middle_name], "H")

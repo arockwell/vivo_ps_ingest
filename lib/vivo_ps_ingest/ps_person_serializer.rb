@@ -2,6 +2,7 @@ module VivoPsIngest
   class PsPersonSerializer
     def create_rdf_for_person_in_ps(dbh, uri, ufid)
       person = RDF::Graph.new
+      person.insert(RDF::Statement(uri, Person.predicates[:ufid], ufid))
       person.insert(create_work_title_rdf(dbh, uri, ufid))
       person.insert(create_glid_rdf(dbh, uri, ufid))
       person.insert(create_work_email_rdf(dbh, uri, ufid))
