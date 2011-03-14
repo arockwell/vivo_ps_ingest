@@ -49,16 +49,6 @@ module VivoPsIngest
       differences.should == {}
     end
 
-    # this does not test anything
-    it "should update people" do
-      client = UpdatePeople.new
-      differences = client.update_people
-      puts "REMOVALS"
-      differences[:removals].each_statement {|x| puts x.inspect }
-      puts "ADDITIONS"
-      differences[:additions].each_statement {|x| puts x.inspect }
-    end
-
     it "should serialize the graph to a file" do
       filename = File.dirname(__FILE__) + '/../test/temp.nt'
       graph = RDF::Graph.new
