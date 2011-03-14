@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-require 'conf.rb'
+require '../conf.rb'
 
 def create_blank_nodes(dbh)
   # Find all ufids not in our vivo

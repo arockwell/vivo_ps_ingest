@@ -1,7 +1,7 @@
 current_dir = File.dirname(__FILE__)
 
 task :dump_vivo_data do
-  vivo_dump_programs = %w(dump_vivo_ufids.rb dump_vivo_orgs.rb)
+  vivo_dump_programs = %w(dump_vivo_orgs.rb)
   vivo_dump_programs.each do |vivo_dump_program|
     puts "Running #{vivo_dump_program}"
     %x["#{current_dir}/#{vivo_dump_program}"]

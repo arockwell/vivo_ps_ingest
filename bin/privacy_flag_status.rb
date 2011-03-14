@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-require 'conf.rb'
+require '../conf.rb'
 
 def print_privacy_flag_status(ufids)
   begin 

@@ -1,6 +1,6 @@
 #!/usr/bin/ruby 
 
-require 'conf.rb'
+require '../conf.rb'
 
 def find_positions()
   sparql = <<-EOH
