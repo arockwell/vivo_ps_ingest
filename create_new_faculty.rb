@@ -36,160 +36,9 @@ where
   end
   sth.finish
   dbh.commit
+  return blank_node_people
 end
 
-
-def generate_name_rdf(dbh)
-  join_names_to_blank_nodes = <<-EOH
-select ps.ufid, ps.type_cd, ps.name_text, vivo.uri 
-from psIngestDev.ps_names ps, vivo_blank_node_people vivo 
-where ps.ufid = vivo.ufid
-  EOH
-
-  first_name_pred = RDF::URI.new('http://xmlns.com/foaf/0.1/firstName')
-  last_name_pred = RDF::URI.new('http://xmlns.com/foaf/0.1/lastName')
-  middle_name_pred = RDF::URI.new('http://vivoweb.org/ontology/core#middleName') 
-  label_pred = RDF::URI.new('http://www.w3.org/2000/01/rdf-schema#label')
-  prefix_name_pred = RDF::URI.new('http://purl.org/ontology/bibo/prefixName')
-  suffix_name_pred = RDF::URI.new('http://purl.org/ontology/bibo/suffixName')
-
-  sth = dbh.execute(join_names_to_blank_nodes)
-  data = []
-  sth.fetch do |row|
-    # This is hack to make a bnode with a specific id
-    uri = RDF::Node.new
-    uri.id = RDF::URI.new(row[:uri])
-    if row[:type_cd] == 35
-      data << RDF::Statement(uri, first_name_pred, row[:name_text])
-    elsif row[:type_cd] == 36
-      data << RDF::Statement(uri, last_name_pred, row[:name_text])
-    elsif row[:type_cd] == 37 && row[:type_cd] != ""
-      data << RDF::Statement(uri, middle_name_pred, row[:name_text])
-    elsif row[:type_cd] == 38
-      data << RDF::Statement(uri, prefix_name_pred, row[:name_text])
-    elsif row[:type_cd] == 39
-      data << RDF::Statement(uri, suffix_name_pred, row[:name_text])
-    elsif row[:type_cd] == 232
-      data << RDF::Statement(uri, label_pred, row[:name_text])
-    end
-  end
-  return data
-end
-
-def generate_phone_number_rdf(dbh)
-  sql = <<-EOH
-select vivo.uri, ps.ufid, ps.type_cd, ps.area_code, ps.extension, ps.phone_number 
-from psIngestDev.ps_phone_numbers ps, psIngestDev.vivo_blank_node_people vivo
-where ps.ufid = vivo.ufid
-  EOH
-
-  work_phone_pred = RDF::URI.new('http://vivoweb.org/ontology/core#workPhone')
-  work_fax_pred = RDF::URI.new('http://vivoweb.org/ontology/core#workFax')
-
-  sth = dbh.execute(sql)
-  data = []
-  sth.fetch do |row|
-    # This is hack to make a bnode with a specific id
-    uri = RDF::Node.new
-    uri.id = RDF::URI.new(row[:uri])
-
-    # write out phone number in format NNN.NNN.NNNN xNNNN
-    area_code = row[:area_code].nil? ? "" : row[:area_code].strip
-    phone_number = row[:phone_number].nil? ? "" : row[:phone_number].strip
-    extension = row[:extension].nil? ? "" : row[:extension].strip
-    phone = "#{area_code}.#{phone_number.slice(0..2)}.#{phone_number.slice(3..6)}"
-    phone = extension == "" ? phone : phone + " x" + extension
-
-    if row[:type_cd] == "10"
-      data << RDF::Statement(uri, work_phone_pred, phone)
-    elsif row[:type_cd] == "11"
-      data << RDF::Statement(uri, work_fax_pred, phone)
-    end
-  end
-  return data
-end
-
-def generate_work_email_rdf(dbh)
-  sql = <<-EOH
-select vivo.uri, ps.ufid, ps.uf_email as work_email
-from psIngestDev.ps_employee_records ps, vivo_blank_node_people vivo
-where ps.ufid = vivo.ufid
-  EOH
-
-  work_email_pred = RDF::URI.new('http://vivoweb.org/ontology/core#workEmail')
-
-  sth = dbh.execute(sql)
-  data = []
-  sth.fetch do |row|
-    # This is hack to make a bnode with a specific id
-    uri = RDF::Node.new
-    uri.id = RDF::URI.new(row[:uri])
-    if row[:work_email] != ""
-      data << RDF::Statement(uri, work_email_pred, row[:work_email])
-    end
-  end
-  return data
-end
-
-def generate_work_title_rdf(dbh)
-  sql = <<-EOH
-select vivo.uri, ps.ufid, ps.work_title
-from psIngestDev.ps_employee_records ps, vivo_blank_node_people vivo
-where ps.ufid = vivo.ufid
-  EOH
-
-  hr_job_title = RDF::URI.new('http://vitro.mannlib.cornell.edu/ns/vitro/0.7#moniker')
-
-  sth = dbh.execute(sql)
-  data = []
-  sth.fetch do |row|
-    # This is hack to make a bnode with a specific id
-    uri = RDF::Node.new
-    uri.id = RDF::URI.new(row[:uri])
-    if row[:work_title] != ""
-      data << RDF::Statement(uri, hr_job_title, row[:work_title])
-    end
-  end
-  return data
-end
-
-def generate_ufid_rdf(dbh)
-  sql = <<-EOH
-select uri, ufid from vivo_blank_node_people
-  EOH
-
-  ufid_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/ufid')
-
-  sth = dbh.execute(sql)
-  data = []
-  sth.fetch do |row|
-    # This is hack to make a bnode with a specific id
-    uri = RDF::Node.new
-    uri.id = RDF::URI.new(row[:uri])
-    data << RDF::Statement(uri, ufid_pred, row[:ufid])
-  end
-  return data
-end
-
-def generate_glid_rdf(dbh)
-  sql = <<-EOH
-select vivo.uri, ps.ufid, ps.glid
-from psIngestDev.ps_glid ps, vivo_blank_node_people vivo
-where ps.ufid = vivo.ufid
-  EOH
-
-  gatorlink_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/gatorlink')
-
-  sth = dbh.execute(sql)
-  data = []
-  sth.fetch do |row|
-    # This is hack to make a bnode with a specific id
-    uri = RDF::Node.new
-    uri.id = RDF::URI.new(row[:uri])
-    data << RDF::Statement(uri, gatorlink_pred, row[:glid])
-  end
-  return data
-end
 
 def generate_type_rdf(dbh)
   sql = <<-EOH
@@ -288,25 +137,15 @@ end
 begin
   dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
   puts "Create blank nodes"
-  create_blank_nodes(dbh)
+  blank_node_people = create_blank_nodes(dbh)
 
-  puts "Generate name rdf"
-  name_rdf = generate_name_rdf(dbh)
-  
-  puts "Generate phone number rdf"
-  phone_number_rdf = generate_phone_number_rdf(dbh)
-
-  puts "Generate work email rdf"
-  work_email_rdf = generate_work_email_rdf(dbh)
-
-  puts "Generate work title rdf"
-  work_title_rdf = generate_work_title_rdf(dbh)
-  
-  puts "Generate ufid rdf"
-  ufid_rdf = generate_ufid_rdf(dbh)
-
-  puts "Generate glid rdf"
-  glid_rdf = generate_glid_rdf(dbh)
+  puts "Generate person rdf"
+  ps_person_serializer = PsPersonSerializer.new
+  people_rdf = RDF::Graph.new
+  blank_node_people.each do |uri, ufid| 
+    person_rdf = ps_person_serializer.create_rdf_for_person_in_ps(dbh, uri, ufid)
+    people_rdf.insert(person_rdf)
+  end
 
   puts "Generate type rdf"
   type_rdf = generate_type_rdf(dbh)
@@ -314,42 +153,11 @@ begin
   puts "Generate position rdf"
   pos_rdf = generate_pos_rdf(dbh)
 
-  RDF::Writer.open('new_faculty_names.nt') do |writer|
-    name_rdf.each do |datum|
+  RDF::Writer.open('new_people_rdf.nt') do |writer|
+    type_rdf.each do |datum|
       writer << datum
     end
   end
-
-  RDF::Writer.open('new_faculty_phone_numbers.nt') do |writer|
-    phone_number_rdf.each do |datum|
-      writer << datum
-    end
-  end
-
-  RDF::Writer.open('new_faculty_work_email.nt') do |writer|
-    work_email_rdf.each do |datum|
-      writer << datum
-    end
-  end
-
-  RDF::Writer.open('new_faculty_work_title.nt') do |writer|
-    work_title_rdf.each do |datum|
-      writer << datum
-    end
-  end
-
-  RDF::Writer.open('new_faculty_ufids.nt') do |writer|
-    ufid_rdf.each do |datum|
-      writer << datum
-    end
-  end
-
-  RDF::Writer.open('new_faculty_glid.nt') do |writer|
-    glid_rdf.each do |datum|
-      writer << datum
-    end
-  end
-
   RDF::Writer.open('new_faculty_types.nt') do |writer|
     type_rdf.each do |datum|
       writer << datum
