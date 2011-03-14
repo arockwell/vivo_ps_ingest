@@ -40,16 +40,11 @@ construct {
   ?person core:middleName ?middle_name .
   ?person bibo:prefixName ?prefix_name .
   ?person bibo:suffixName ?suffix_name .
-
   ?person core:workPhone ?work_phone .
   ?person core:workFax ?work_fax .
-
   ?person core:workEmail ?work_email .
-
   ?person rdfs:label ?label .
-  
   ?person ufVivo:gatorlink ?glid . 
-   
   ?person vitro:moniker ?moniker
 }
 where
@@ -64,21 +59,15 @@ where
   optional { ?person core:middleName ?middle_name }
   optional { ?person bibo:prefixName ?prefix_name }
   optional { ?person bibo:suffixName ?suffix_name }
-
   optional { ?person core:workPhone ?work_phone }
   optional { ?person core:workFax ?work_fax }
-
   optional { ?person core:workEmail ?work_email }
-
   optional { ?person rdfs:label ?label }
-  
   optional { ?person ufVivo:gatorlink ?glid }
-  
   optional { ?person vitro:moniker ?moniker }
-
   optional { ?person ufVivo:harvestedBy ?harvester}
-  filter(str(?harvester) != "DSR-Harvester")
 
+  filter(str(?harvester) != "DSR-Harvester")
   ?person rdf:type ?type
 }
       EOH
