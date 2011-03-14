@@ -65,6 +65,16 @@ module VivoPsIngest
       File.delete(filename)
     end
 
+    it "should compare a Alex as defined in VIVO to PS and find them the same." do
+      vivo_rdf = RDF::Graph.load(File.dirname(__FILE__) + '/../test/person_alex_in_vivo.nt')
+      update_people = UpdatePeople.new
+      uri = RDF::URI.new("http://vivo.ufl.edu/individual/n1639")
+      ufid = "81036590"
+      dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
+      update_people.compare_person_in_ps_with_vivo(dbh, uri, ufid, vivo_rdf)
+    end
+
+
     def check_predicate_value(graph, predicate, expected_value)
       predicate.nil?.should == false
       graph.query(:predicate => predicate).first.object.value.should == expected_value
