@@ -1,0 +1,3 @@
+<http://example.org/person/n1> <http://example.org/prop/name> "foo"
+<http://example.org/person/n1> <http://example.org/prop/phone> "5555555555"
+

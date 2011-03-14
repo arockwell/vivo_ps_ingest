@@ -1,4 +1,3 @@
 *.swp
 *.csv
-*.nt
 spec/local_config.rb

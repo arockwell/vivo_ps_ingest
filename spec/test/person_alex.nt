@@ -1,0 +1,9 @@
+<a> <http://vivoweb.org/ontology/core#workEmail> "alexhr@ufl.edu" .
+<a> <http://purl.org/ontology/bibo/prefixName> "Mr" .
+<a> <http://xmlns.com/foaf/0.1/lastName> "Rockwell" .
+<a> <http://vitro.mannlib.cornell.edu/ns/vitro/0.7#moniker> "Vivo Local Implementation Support" .
+<a> <http://vivoweb.org/ontology/core#workPhone> "3522732590" .
+<a> <http://vivo.ufl.edu/ontology/vivo-ufl/gatorlink> "alexhr" .
+<a> <http://xmlns.com/foaf/0.1/firstName> "Alexander" .
+<a> <http://vivoweb.org/ontology/core#middleName> "H" .
+<a> <http://www.w3.org/2000/01/rdf-schema#label> "Rockwell, Alex"

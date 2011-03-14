@@ -1,0 +1,10 @@
+<http://vivo.ufl.edu/individual/n1639> <http://vitro.mannlib.cornell.edu/ns/vitro/0.7#moniker> "Vivo Local Implementation Support"^^<http://www.w3.org/2001/XMLSchema#string> .
+<http://vivo.ufl.edu/individual/n1639> <http://vivoweb.org/ontology/core#workEmail> "alexhr@ufl.edu" .
+<http://vivo.ufl.edu/individual/n1639> <http://xmlns.com/foaf/0.1/lastName> "Rockwell" .
+<http://vivo.ufl.edu/individual/n1639> <http://vivo.ufl.edu/ontology/vivo-ufl/gatorlink> "alexhr"^^<http://www.w3.org/2001/XMLSchema#string> .
+<http://vivo.ufl.edu/individual/n1639> <http://purl.org/ontology/bibo/prefixName> "Mr" .
+<http://vivo.ufl.edu/individual/n1639> <http://vivo.ufl.edu/ontology/vivo-ufl/ufid> "81036590" .
+<http://vivo.ufl.edu/individual/n1639> <http://vivoweb.org/ontology/core#workPhone> "3522732590" .
+<http://vivo.ufl.edu/individual/n1639> <http://vivoweb.org/ontology/core#middleName> "H" .
+<http://vivo.ufl.edu/individual/n1639> <http://www.w3.org/2000/01/rdf-schema#label> "Rockwell, Alex"@en-US .
+<http://vivo.ufl.edu/individual/n1639> <http://xmlns.com/foaf/0.1/firstName> "Alexander" .
