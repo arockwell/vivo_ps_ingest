@@ -13,7 +13,8 @@ module VivoPsIngest
         :work_fax => RDF::URI.new('http://vivoweb.org/ontology/core#workFax'),
         :work_email => RDF::URI.new('http://vivoweb.org/ontology/core#workEmail'),
         :hr_job_title => RDF::URI.new('http://vitro.mannlib.cornell.edu/ns/vitro/0.7#moniker'),
-        :gatorlink => RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/gatorlink')
+        :gatorlink => RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/gatorlink'),
+        :ufid => RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/ufid')
       }
     end
   end

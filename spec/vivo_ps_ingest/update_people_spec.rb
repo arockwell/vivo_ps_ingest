@@ -49,42 +49,14 @@ module VivoPsIngest
       differences.should == {}
     end
 
-  #  it "should retrieve a person record from vivo" do
-  #    client = UpdatePeople.new
-  #    results = client.retrieve_person_from_vivo(@ufid)
-  #    results.each {|x| puts x.inspect }
-  #    #results.size.should == 9
-  #    check_predicate_value(results, @predicates[:first_name], "Alexander")
-  #    check_predicate_value(results, @predicates[:last_name], "Rockwell")
-  #    check_predicate_value(results, @predicates[:middle_name], "H")
-  #    check_predicate_value(results, @predicates[:prefix_name], "Mr")
-  #    check_predicate_value(results, @predicates[:work_phone], "3522732590")
-  #    check_predicate_value(results, @predicates[:work_email], "alexhr@ufl.edu")
-
-  #    results_2 = results
-  #  end
-
-    # I need a better test setup for this to be useful
-    it "should find all ufids in vivo" do
-      client = UpdatePeople.new
-      results = client.find_all_ufids_in_vivo
-      results.size.should > 0
-    end
-
-    #it "should compare alex in vivo and alex in ps and find they are same" do
-    #  dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
-    #  update_people = UpdatePeople.new
-
-    #  difference = update_people.compare_person_in_ps_with_vivo(dbh, @uri, @ufid)
-    #  vivo_person = difference[:additions]
-    #  ps_person = difference[:removals]
-    #  difference.should == {}
-    #end
-    
     # this does not test anything
     it "should update people" do
       client = UpdatePeople.new
-#      differences = client.update_people
+      differences = client.update_people
+      puts "REMOVALS"
+      differences[:removals].each_statement {|x| puts x.inspect }
+      puts "ADDITIONS"
+      differences[:additions].each_statement {|x| puts x.inspect }
     end
 
     it "should serialize the graph to a file" do

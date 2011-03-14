@@ -81,7 +81,6 @@ where
 
   ?person rdf:type ?type
 }
-limit 10
       EOH
 
       hostname = ENV['vivo_hostname'] 
@@ -94,49 +93,18 @@ limit 10
       return results
     end
 
-    # @TODO remove artificial limit to speed up tests
-    def find_all_ufids_in_vivo
-      sparql = <<-EOH
-PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-PREFIX ufVivo: <http://vivo.ufl.edu/ontology/vivo-ufl/>
-
-
-select distinct ?uri ?ufid                                    
-where                                                                     
-{
-  ?uri rdf:type foaf:Person .
-  ?uri ufVivo:ufid ?raw_ufid .
-  let (?ufid := str(?raw_ufid)) .
-  optional { ?uri ufVivo:harvestedBy ?harvester}
-  filter(str(?harvester) != "DSR-Harvester")
-}
-limit 10
-      EOH
-      
-      sparql_client = VivoWebApi::Client.new(ENV['vivo_hostname'])
-      results = sparql_client.execute_sparql_select(ENV['vivo_username'], ENV['vivo_password'], sparql)
-
-      ufid_uri_map = {}
-      results.each do |result|
-        ufid = result[:ufid].to_s
-        ufid_uri_map[ufid] = result[:uri]
-      end
-        
-      return ufid_uri_map
-
-    end
-
     def update_people
-      results = find_all_ufids_in_vivo
       updates = { :additions => RDF::Graph.new, :removals => RDF::Graph.new}
       @logger.info("Retrieving all people from vivo")
       vivo_rdf = retrieve_people_from_vivo
+      ufids = vivo_rdf.query(:predicate => Person.predicates[:ufid])
       @logger.info("Finished retrieving all people from vivo")
-      results.keys.each do |ufid|
-        @logger.info("Processing uri: #{results[ufid]} #{ufid}")
+      ufids.each_statement do |ufid_statement|
+        uri = ufid_statement.subject
+        ufid = ufid_statement.object.value
+        @logger.info("Processing uri: #{uri} #{ufid}")
         dbh = DBI.connect(ENV['mysql_connection'], ENV['mysql_username'], ENV['mysql_password'])
-        difference = compare_person_in_ps_with_vivo(dbh, results[ufid], ufid, vivo_rdf)
+        difference = compare_person_in_ps_with_vivo(dbh, uri, ufid, vivo_rdf)
         if difference != {}
           first_name_pred = RDF::URI.new('http://xmlns.com/foaf/0.1/firstName')
           first_name_addition = difference[:additions].query(:predicate => first_name_pred).first
@@ -145,7 +113,7 @@ limit 10
           # if first and last name isn't present we're not working with a 
           # valid record, so skip it
           if first_name_addition.nil? || last_name_addition.nil?
-            @logger.info("Skipping uri: #{results[ufid]} #{ufid}")
+            @logger.info("Skipping uri: #{uri} #{ufid}")
           else
             updates[:additions].insert(difference[:additions])
             updates[:removals].insert(difference[:removals])
@@ -167,7 +135,6 @@ limit 10
       ufid_pred = RDF::URI.new('http://vivo.ufl.edu/ontology/vivo-ufl/ufid')
       vivo_person_uri = vivo_rdf.query(:predicate => ufid_pred, :object => RDF::Literal.new(ufid)).first.subject
       vivo_person_rdf = vivo_rdf.query(:subject => vivo_person_uri)
-      vivo_person_rdf.each_statement {|x| puts x.inspect }
       ps_person_serializer = PsPersonSerializer.new
       ps_rdf = ps_person_serializer.create_rdf_for_person_in_ps(dbh, uri, ufid)
       difference = difference_between_graphs(vivo_person_rdf, ps_rdf)
